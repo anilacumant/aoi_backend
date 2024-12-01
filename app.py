@@ -11,6 +11,7 @@ from routes.certifications import certifications_blueprint
 from routes.scheduler import start_scheduler
 from routes.auth import auth_blueprint 
 from routes.learning import learning_blueprint
+from routes.team_management import team_management_blueprint
 
 
 
@@ -34,6 +35,7 @@ app.register_blueprint(leave_blueprint, url_prefix='/api/leaves')
 app.register_blueprint(certifications_blueprint, url_prefix='/api/certifications')
 app.register_blueprint(auth_blueprint, url_prefix='/api/auth')
 app.register_blueprint(learning_blueprint, url_prefix='/api/learning')
+app.register_blueprint(team_management_blueprint, url_prefix='/api/team_management')
 
 
 # Error handling
