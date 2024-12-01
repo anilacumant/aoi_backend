@@ -10,6 +10,8 @@ from routes.leaves import leave_blueprint
 from routes.certifications import certifications_blueprint
 from routes.scheduler import start_scheduler
 from routes.auth import auth_blueprint 
+from routes.learning import learning_blueprint
+
 
 
 app = Flask(__name__)
@@ -31,6 +33,7 @@ app.register_blueprint(competencies_blueprint, url_prefix='/api/competencies')
 app.register_blueprint(leave_blueprint, url_prefix='/api/leaves')
 app.register_blueprint(certifications_blueprint, url_prefix='/api/certifications')
 app.register_blueprint(auth_blueprint, url_prefix='/api/auth')
+app.register_blueprint(learning_blueprint, url_prefix='/api/learning')
 
 
 # Error handling

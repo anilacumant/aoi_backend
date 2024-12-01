@@ -105,7 +105,36 @@ class Leave(db.Model):
     type = db.Column(db.Enum('Sick', 'Vacation', 'Other'), nullable=False)
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected'), default='Pending')
 
+    # Relationship with Employee
     employee = db.relationship('Employee', backref='leaves')
+
+    def __repr__(self):
+        return f"<Leave(id={self.id}, employee_id={self.employee_id}, type={self.type}, status={self.status})>"
+
     
+
+class LearningResource(db.Model):
+    __tablename__ = 'learning_resources'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    type = db.Column(db.Enum('Course', 'Mentor', 'Project'), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    url = db.Column(db.Text, nullable=True)
+    competency_id = db.Column(db.Integer, db.ForeignKey('competencies.id'), nullable=True)
+
+    # Define relationship if needed
+    competency = db.relationship('Competency', backref='learning_resources', lazy=True)
+
+
+class EmployeeLearning(db.Model):
+    __tablename__ = 'employee_learning'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    resource_id = db.Column(db.Integer, db.ForeignKey('learning_resources.id'), nullable=False)
+    progress = db.Column(db.Enum('Not Started', 'In Progress', 'Completed'), default='Not Started')
+
+    # Define relationships if needed
+    employee = db.relationship('Employee', backref='learning_records', lazy=True)
+    resource = db.relationship('LearningResource', backref='employee_records', lazy=True)
 
 
