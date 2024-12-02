@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 from database import db
-from models import CertificationRequest, Competency, EmployeeCompetency, Employee
+from models import CertificationRequest, Competency, EmployeeCompetency, Employee, User
 
 certifications_blueprint = Blueprint('certifications', __name__)
 
@@ -26,12 +26,11 @@ def request_certification():
 @certifications_blueprint.route('/pending/<int:manager_id>', methods=['GET'])
 def get_pending_requests(manager_id):
     try:
-        # Fetch data directly from certification_requests table
         requests = CertificationRequest.query.filter_by(manager_id=manager_id, approval_status='Pending').all()
         result = [
             {
                 "id": req.id,
-                "employee_id": req.employee_id,  # Include employee_id for display
+                "employee_id": req.employee_id,
                 "certification_name": req.certification_name,
                 "requested_date": req.requested_date,
                 "approval_status": req.approval_status,
@@ -40,7 +39,6 @@ def get_pending_requests(manager_id):
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # Manager approves/rejects a certification request
 @certifications_blueprint.route('/approve/<int:request_id>', methods=['PUT'])
@@ -63,7 +61,7 @@ def approve_certification(request_id):
                 expiry_date=expiry_date
             )
             db.session.add(new_competency)
-            db.session.flush()  # Get the new competency ID before committing
+            db.session.flush()
 
             employee_competency = EmployeeCompetency(
                 employee_id=cert_request.employee_id,
@@ -93,5 +91,53 @@ def get_employee_certifications(employee_id):
             } for comp in competencies if comp.competency.type == 'Certification'
         ]
         return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# HR views all certifications and employees
+@certifications_blueprint.route('/hr/overview', methods=['GET'])
+def get_all_certifications():
+    try:
+        certifications = (
+            db.session.query(
+                Employee.id.label("employee_id"),
+                Employee.name.label("employee_name"),
+                User.username.label("manager_name"),
+                Competency.name.label("certification_name"),
+                Competency.expiry_date.label("expiry_date"),
+                EmployeeCompetency.status.label("certification_status"),
+            )
+            .join(EmployeeCompetency, Employee.id == EmployeeCompetency.employee_id)
+            .join(Competency, EmployeeCompetency.competency_id == Competency.id)
+            .join(User, Employee.manager_id == User.id)
+            .filter(Competency.type == "Certification")
+            .all()
+        )
+
+        result = [
+            {
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "manager_name": row.manager_name,
+                "certification_name": row.certification_name,
+                "expiry_date": row.expiry_date,
+                "certification_status": row.certification_status,
+            }
+            for row in certifications
+        ]
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# HR sends notification for updating certifications
+@certifications_blueprint.route('/send-notification/<int:employee_id>', methods=['POST'])
+def send_notification(employee_id):
+    try:
+        data = request.get_json()
+        certification_name = data["certification_name"]
+
+        print(f"Notification sent to Employee ID {employee_id} for updating certification: {certification_name}")
+
+        return jsonify({"message": f"Notification sent to employee {employee_id} for certification '{certification_name}'."}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

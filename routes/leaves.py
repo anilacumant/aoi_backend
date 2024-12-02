@@ -89,3 +89,24 @@ def get_employee_leaves(employee_id):
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+# Get all leave requests for HR
+@leave_blueprint.route('/hr', methods=['GET'])
+def get_all_leaves():
+    try:
+        leaves = Leave.query.all()
+        result = [
+            {
+                "id": leave.id,
+                "employee_id": leave.employee_id,
+                "employee_name": leave.employee.name,
+                "start_date": leave.start_date,
+                "end_date": leave.end_date,
+                "type": leave.type,
+                "status": leave.status
+            } for leave in leaves
+        ]
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

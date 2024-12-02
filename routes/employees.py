@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from database import db
-from models import Employee, User
+from models import Employee, CertificationRequest, User
 
 employee_blueprint = Blueprint('employees', __name__)
+users_blueprint = Blueprint('users', __name__)
 
+# Fetch all employees with associated manager names
 @employee_blueprint.route('/', methods=['GET', 'POST'])
 def manage_employees():
     if request.method == 'GET':
@@ -14,7 +16,8 @@ def manage_employees():
                 "name": emp.name,
                 "skills": emp.skills,
                 "certifications": emp.certifications,
-                "manager_id": emp.manager_id
+                "manager_id": emp.manager_id,
+                "manager_name": User.query.get(emp.manager_id).username if emp.manager_id else "Unassigned"
             } for emp in employees
         ]
         return jsonify(result), 200
@@ -31,6 +34,7 @@ def manage_employees():
         db.session.commit()
         return jsonify({"message": "Employee created successfully"}), 201
 
+# Employee CRUD operations
 @employee_blueprint.route('/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 def employee_operations(id):
     employee = Employee.query.get_or_404(id)
@@ -40,7 +44,8 @@ def employee_operations(id):
             "name": employee.name,
             "skills": employee.skills,
             "certifications": employee.certifications,
-            "manager_id": employee.manager_id
+            "manager_id": employee.manager_id,
+            "manager_name": User.query.get(employee.manager_id).username if employee.manager_id else "Unassigned"
         }), 200
 
     if request.method == 'PUT':
@@ -53,6 +58,25 @@ def employee_operations(id):
         return jsonify({"message": "Employee updated successfully"}), 200
 
     if request.method == 'DELETE':
-        db.session.delete(employee)
-        db.session.commit()
-        return jsonify({"message": "Employee deleted successfully"}), 200
+        try:
+            db.session.delete(employee)
+            db.session.commit()
+            return jsonify({"message": "Employee deleted successfully"}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+# Fetch all managers
+@users_blueprint.route('/managers/', methods=['GET'])
+def get_managers():
+    try:
+        managers = User.query.filter_by(role='Manager').all()
+        result = [
+            {
+                "id": manager.id,
+                "username": manager.username
+            } for manager in managers
+        ]
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
